@@ -1,0 +1,35 @@
+- name: index.html check
+  stat: path=/usr/share/nginx/html/index.html
+  register: nginx_index_html
+
+- name: install nginx and git
+  yum: name={{ item }} state=latest
+  with_items: 
+    - nginx
+    - git
+
+- name: backup if index.html already exists
+  shell: mv /usr/share/nginx/html/index.html /usr/share/nginx/html/index.html-$(date +"%Y%m%d_%H%M%S")
+  when: nginx_index_html.stat.exists == True
+
+- name: git clone puppetlabs/exercise-webpage.git
+  git: repo=https://github.com/puppetlabs/exercise-webpage.git dest={{ item }}
+  with_items: temp_git_clone_folder
+
+#git clone to a temp directory - to get around git clone failing if directory exists
+- name: move git cloned file to nginx html folder
+  shell: mv {{ item }}/index.html /usr/share/nginx/html/
+  with_items: temp_git_clone_folder
+
+- name: remove temp git clone directory
+  shell: rm -rf {{ item }}
+  with_items: temp_git_clone_folder
+
+- name: modify nginx.conf
+  template: 
+    src=nginx.conf
+    dest=/etc/nginx/nginx.conf
+  with_items: nginx_port
+
+- name: restart nginx
+  service: name=nginx state=restarted

@@ -1,0 +1,2 @@
+nginx_port: 8000
+temp_git_clone_folder: /tmp/exercise-webpage.git-temp
